@@ -4,16 +4,14 @@ import json
 from seleniumwire import webdriver  # note the change here
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.common.exceptions import ElementNotInteractableException
 
 from signature_generator2 import generateRequestPayloadSignature
 from sendRequest import getTavernData
 from getData import getData, getRequestId, getUserKey, getSalt, intercept_request_id
-from gameActions.pickupAllProduction import pickupAllProduction, pickupBestPFProduction, checkPickupAllProduction, checkPickupBestPFProduction
+from gameActions.pickupAllProduction import pickupAllProduction, pickupBestPFProduction, checkPickupAllProduction, checkPickupBestPFProduction, pickupBlueGalaxyAndBestPFProduction
 from gameActions.startAllProduction import startAllProduction, checkStartAllProduction
 from gameActions.startAllProduction import startAllGoods, checkStartAllGoods
 from gameActions.startAllProduction import startAllMilitary, checkStartAllMilitary
@@ -57,6 +55,7 @@ def request_interceptor(request):
         last_user_key = user_key
         user_key = getUserKey(log_request)
         if last_user_key != user_key:
+            
             print(f"The user key is: {user_key}")
             
         last_request_id = intercept_request_id(request, last_request_id, user_key, verbose=True)
@@ -150,6 +149,16 @@ if collectAllPFs == "yes":
     time.sleep(500/1000)
     driver.refresh()
     
+    
+    
+
+checkPickupBestPFProduction(data)
+collectBestPFs = input("collect best blue galaxy test? (yes) or (no)")
+if collectBestPFs == "yes":
+    data = getData(log_response)
+    pickupBlueGalaxyAndBestPFProduction(data, driver, user_key, log_request, verbose=True)
+    time.sleep(500/1000)
+    driver.refresh()
     
 # blue galaxy - X_OceanicFuture_Landmark3
 

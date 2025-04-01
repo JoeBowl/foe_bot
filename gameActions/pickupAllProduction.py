@@ -90,8 +90,37 @@ def checkPickupBestPFProduction(data, verbose=True):
     return building_ids
 
 
+def getBlueGalaxyId(data, verbose=False):
+    paths = find_key_paths(data, '__class__', 'ProductionFinishedState')
+    
+    for path in paths:
+        buildingInfo = data[path[0]][path[1]][path[2]][path[3]][path[4]]
+        building_id = buildingInfo['id']
+        name = buildingInfo['cityentity_id']  # Extract building name
+        
+        if name == "X_OceanicFuture_Landmark3":
+            return(building_id)
+        
+def pickupBlueGalaxyAndBestPFProduction(data, driver, user_key, logs, verbose=False):
+    best_building_ids = checkPickupBestPFProduction(data, verbose=False)
+    blue_galaxy_id = getBlueGalaxyId(data)
+    
+    building_ids = [blue_galaxy_id] + best_building_ids
+        
+    if building_ids != []:
+        response = pickupProduction(building_ids, driver, user_key, logs)
+    else:
+        response = None
+    
+    if verbose == True:
+        print(response)
+        
+    return response
+
         
 if __name__ == "__main__":
     print(checkPickupBestPFProduction(data))
     print(checkPickupAllProduction(data))
+    
+    print(getBlueGalaxyId(data))
     
