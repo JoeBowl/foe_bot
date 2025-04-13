@@ -8,6 +8,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import ElementNotInteractableException
 
+from models.account import Account
+
 from signature_generator2 import generateRequestPayloadSignature
 from sendRequest import getTavernData
 from getData import getData, getRequestId, getUserKey, getSalt, intercept_request_id
@@ -37,25 +39,26 @@ chrome_options.add_argument("--mute-audio")
 
 driver = webdriver.Chrome(options=chrome_options)
 
+account = Account()
+
 log_request = []
 log_response = []
 last_request_time = time.time()  # Track the last request timestamp
 last_request_id = 0
-user_key = None
 salt = None
 
 # Define the request interceptor function
 def request_interceptor(request):
-    global last_request_time, last_request_id, user_key
+    global last_request_time, last_request_id
     log_request.append(request)
     last_request_time = time.time()
     
     # Check if the request URL contains 'forgeofempires.com/game/json?h='
     if "forgeofempires.com/game/json?h=" in request.url:
-        last_user_key = user_key
+        last_user_key = account.user_key
         user_key = getUserKey(log_request)
         if last_user_key != user_key:
-            
+            account.user_key = user_key
             print(f"The user key is: {user_key}")
             
         last_request_id = intercept_request_id(request, last_request_id, user_key, verbose=True)
@@ -129,7 +132,7 @@ checkPickupBestPFProduction(data)
 collectBestPFs = input("collect best? (yes) or (no)")
 if collectBestPFs == "yes":
     data = getData(log_response)
-    pickupBestPFProduction(data, driver, user_key, log_request, verbose=True)
+    pickupBestPFProduction(data, driver, account.user_key, log_request, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     
@@ -145,7 +148,7 @@ checkPickupAllProduction(data)
 collectAllPFs = input("collect all? (yes) or (no)")
 if collectAllPFs == "yes":
     data = getData(log_response)
-    pickupAllProduction(data, driver, user_key, log_request, verbose=True)
+    pickupAllProduction(data, driver, account.user_key, log_request, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     
@@ -156,7 +159,7 @@ checkPickupBestPFProduction(data)
 collectBestPFs = input("collect best blue galaxy test? (yes) or (no)")
 if collectBestPFs == "yes":
     data = getData(log_response)
-    pickupBlueGalaxyAndBestPFProduction(data, driver, user_key, log_request, verbose=True)
+    pickupBlueGalaxyAndBestPFProduction(data, driver, account.user_key, log_request, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     

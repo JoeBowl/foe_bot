@@ -67,9 +67,6 @@ def getRequestId(logs):
     request_id = post_data['requestId']
     return(request_id+1)
 
-if __name__ == "__main__":
-    print(getRequestId(log_request))
-
 def getUserKey(logs, verbose=False):    
     # Initialize a variable to store the user key
     user_key = None
