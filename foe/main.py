@@ -1,3 +1,4 @@
+import datetime
 import time
 import json
 
@@ -44,32 +45,32 @@ account = Account()
 log_request = []
 log_response = []
 last_request_time = time.time()  # Track the last request timestamp
-last_request_id = 0
-salt = None
 
 # Define the request interceptor function
 def request_interceptor(request):
-    global last_request_time, last_request_id
+    global last_request_time
     log_request.append(request)
     last_request_time = time.time()
+    account.log_request(request)
     
     # Check if the request URL contains 'forgeofempires.com/game/json?h='
     if "forgeofempires.com/game/json?h=" in request.url:
         last_user_key = account.user_key
-        user_key = getUserKey(log_request)
+        user_key = account.get_user_key()
         if last_user_key != user_key:
             account.user_key = user_key
             print(f"The user key is: {user_key}")
             
-        last_request_id = intercept_request_id(request, last_request_id, user_key, verbose=True)
+        last_request_id = intercept_request_id(request, account.last_request_id, user_key, verbose=True)
+        account.last_request_id = last_request_id
 
 # Define the response interceptor function with two parameters: request and response
 def response_interceptor(request, response):
-    global salt
     log_response.append([request, response])
+    account.log_response(request, response)
     
     if 'ForgeHX' in request.url:
-        salt = getSalt(request, response, verbose=True)
+        account.salt = getSalt(request, response, verbose=True)
 
 
 # Set the interceptors
@@ -115,12 +116,20 @@ world_button.click()
 
 
 # Wait until 5 seconds have passed with no new requests
-timeout = 5  # Time to wait for inactivity
+timeout = 5  # seconds
 while True:
-    if time.time() - last_request_time >= timeout:
-        print("No new requests for 5 seconds. Continuing execution.")
-        break
-    time.sleep(0.5)  # Check every 0.5 seconds
+    last_request_time = account.get_last_request_time()
+    
+    if last_request_time is None:
+        print("No requests yet. Waiting...")
+    else:
+        # Make sure both are timezone-aware in UTC
+        now = datetime.datetime.now(datetime.UTC)
+        if (now - last_request_time).total_seconds() >= timeout:
+            print("No new requests for 5 seconds. Continuing execution.")
+            break
+        
+    time.sleep(1)
 # wait_for_input = input("Click to start:")
 
 
