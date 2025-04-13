@@ -65,7 +65,7 @@ def response_interceptor(request, response):
     global salt
     log_response.append([request, response])
     
-    if 'ForgeHX-9f90d810.js' in request.url:
+    if 'ForgeHX' in request.url:
         salt = getSalt(request, response, verbose=True)
 
 

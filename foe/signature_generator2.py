@@ -2,7 +2,7 @@ import hashlib
 import json
 
 def generateRequestPayloadSignature(payload, signatureHash):
-    salt = "pnqf5iI4kMm1hdZETXTOKxGnZ07dRLgrInw+WE2/82jqUhJHO5MpdF9t8m7oU1RZlzQxSolAr+TNfNmBedDV4w=="
+    salt = "NDKtXyojc7FgUPNpfRbU5Kx/FwiEF0nz1RBS8H9A5499ktvC4OoZhoeKqgIZR/2en8+LiPiEoW8ZFPuX3faDng=="
     
     # Convert payload to JSON string
     json_payload = json.dumps(payload).replace(' ', '')
