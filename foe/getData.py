@@ -2,6 +2,8 @@ import re
 import brotli
 import json
 import copy
+import zstandard as zstd
+import io
 
 def getData(log_response):
     for request, response in reversed(log_response):
@@ -97,11 +99,17 @@ def getUserKey(logs, verbose=False):
 
 def getSalt(request, response, verbose=False):
     try:
-        # Check if the response is Brotli compressed
-        if 'br' in response.headers.get('content-encoding', ''):
-            decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
+        encoding = response.headers.get('content-encoding', '')
+        
+        # Check if the response compressed
+        if 'br' in encoding:
+            decompressed_body = brotli.decompress(response.body)
+        elif 'zstd' in encoding:
+            dctx = zstd.ZstdDecompressor()
+            with dctx.stream_reader(io.BytesIO(response.body)) as reader:
+                decompressed_body = reader.read()  # Read the entire decompressed stream
         else:
-            decompressed_body = response.body  # No compression, use raw body
+            decompressed_body = response.body
         
         # Decode the response (assuming it's UTF-8)
         decoded_response_body = decompressed_body.decode('utf-8')
