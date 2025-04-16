@@ -1,6 +1,10 @@
 from collections import deque
+import zstandard as zstd
 import datetime
+import brotli
+import json
 import re
+import io
 
 class Account:
     def __init__(self, user_key=None, salt=None, last_request_id=0, log_limit=1000):
@@ -57,7 +61,33 @@ class Account:
             return None
         else:
             return datetime.datetime.fromisoformat(last_request['timestamp']).replace(tzinfo=datetime.UTC)
-    
+        
+    def get_data(self):
+        for entry in reversed(self.response_log):
+            request  = entry['request']
+            response = entry['response']
+            if "forgeofempires.com/game/json?h=" in request.url:
+                if request.body:  # Ensure there is a body to decode
+                    decoded_body = request.body.decode('utf-8')  # Convert bytes to string
+                    json_data = json.loads(decoded_body)  # Convert string to Python object
+                    
+                    for data in json_data:
+                        if data['requestMethod'] == 'getData':
+                            try:
+                                # Check if the response is Brotli compressed
+                                if 'br' in response.headers.get('content-encoding', ''):
+                                    decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
+                                else:
+                                    decompressed_body = response.body  # No compression, use raw body
+                                
+                                # Decode the response (assuming it's UTF-8)
+                                decoded_response_body = decompressed_body.decode('utf-8')
+                                json_response_data = json.loads(decoded_response_body)
+                                
+                                return(json_response_data[1:])
+                            except Exception as e:
+                                print("Could not decode response body:", e)
+                                
     def get_user_key(self, verbose=False):    
         last_request = self.get_last_log(url="forgeofempires.com/game/json?h=", method="POST")
              
@@ -76,3 +106,44 @@ class Account:
             if verbose:
                 print("Could not find the user key.")
             return None
+
+    def get_salt(self, request, response, verbose=False):
+        try:
+            encoding = response.headers.get('content-encoding', '')
+            
+            # Check if the response compressed
+            if 'br' in encoding:
+                decompressed_body = brotli.decompress(response.body)
+            elif 'zstd' in encoding:
+                dctx = zstd.ZstdDecompressor()
+                with dctx.stream_reader(io.BytesIO(response.body)) as reader:
+                    decompressed_body = reader.read()  # Read the entire decompressed stream
+            else:
+                decompressed_body = response.body
+            
+            # Decode the response (assuming it's UTF-8)
+            decoded_response_body = decompressed_body.decode('utf-8')
+            # print(decoded_response_body)
+            
+            signature_marker = "this._signatureHash+"
+            start_pos = decoded_response_body.find(signature_marker)
+            
+            if start_pos == -1:
+                print(f"'{signature_marker}' not found in the body.")
+            
+            # Move the position after "this._signatureHash+"
+            start_pos += len(signature_marker)+1
+
+            # Now, we look for the next quote after this position
+            end_pos = decoded_response_body.find('"', start_pos)
+
+            if end_pos == -1:
+                print("No closing quote found.")
+                
+            # Extract the string between the quotes
+            extracted_content = decoded_response_body[start_pos:end_pos]
+            if verbose:
+                print(f"Salt: {extracted_content}")
+        except Exception as e:
+            print("Could not decode response body:", e)
+        return(extracted_content)

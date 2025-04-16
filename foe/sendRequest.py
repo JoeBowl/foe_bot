@@ -4,8 +4,8 @@ from getData import getRequestId
 import json
 import brotli
 
-def collectTavern(driver, user_key, logs):
-    request_id = getRequestId(logs)
+def collectTavern(driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -15,10 +15,10 @@ def collectTavern(driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
-def getTavernData(driver, user_key, logs):
-    request_id = getRequestId(logs)
+def getTavernData(driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -28,10 +28,10 @@ def getTavernData(driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
-def FriendTavern(friendId, driver, user_key, logs):
-    request_id = getRequestId(logs)
+def FriendTavern(friendId, driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -41,10 +41,10 @@ def FriendTavern(friendId, driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
-def collectAutoAid(autoAidId, driver, user_key, logs):
-    request_id = getRequestId(logs)
+def collectAutoAid(autoAidId, driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -54,10 +54,10 @@ def collectAutoAid(autoAidId, driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
-def startAutoAid(autoAidId, driver, user_key, logs):
-    request_id = getRequestId(logs)
+def startAutoAid(autoAidId, driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -67,10 +67,10 @@ def startAutoAid(autoAidId, driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
-def collectQuest(questId, driver, user_key, logs):
-    request_id = getRequestId(logs)
+def collectQuest(questId, driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -80,11 +80,11 @@ def collectQuest(questId, driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
 # Sends a pickupProduction request and returns the server's response
-def collectReward(hiddenRewardId, driver, user_key, logs):
-    request_id = getRequestId(logs)
+def collectReward(hiddenRewardId, driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -94,11 +94,11 @@ def collectReward(hiddenRewardId, driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
 # Sends a pickupProduction request and returns the server's response
-def pickupProduction(building_ids, driver, user_key, logs):
-    request_id = getRequestId(logs)
+def pickupProduction(building_ids, driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -108,11 +108,11 @@ def pickupProduction(building_ids, driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
 
 # Sends a startProduction request and returns the server's response
-def startProduction(building_id, production_time, driver, user_key, logs):
-    request_id = getRequestId(logs)
+def startProduction(building_id, production_time, driver, account):
+    request_id = account.last_request_id + 1
     payload = [
         {
             "__class__": "ServerRequest",
@@ -122,20 +122,20 @@ def startProduction(building_id, production_time, driver, user_key, logs):
             "requestId": request_id
         }
     ]
-    return(sendRequest(driver, payload, user_key, logs))
+    return(sendRequest(driver, payload, account))
         
     
       
 
 
 
-def get_header(logs, signature):    
-    # Get the last POST request
-    last_post_request = getLastLog(logs)
+def get_header(account, signature):    
+    # Get the last POST request (to copy headers)
+    last_post_request = account.get_last_log(url="forgeofempires.com/game/json?h=", method="POST")['request']
     
     # Check if a POST request was found
     if last_post_request is None:
-        raise FatalError("Fatal Error: No POST requests found in the logs at function sendRequest.get_header.")
+        raise RuntimeError("Fatal Error: No POST requests found in the logs at function sendRequest.get_header.")
     
     # print(last_post_request.headers)
     headers_dict = last_post_request.headers
@@ -164,14 +164,17 @@ def get_url(logs):
         if "forgeofempires.com/game/json?h=" in request.url:
             return request.url[0:35]
 
-def sendRequest(driver, payload, user_key, logs):
+def sendRequest(driver, payload, account):
+    user_key = account.user_key
+    logs = account.get_log_request_old()
+    
     signature = generateRequestPayloadSignature(payload, user_key)
     print(payload, user_key, signature)
     
     # Serialize the payload to a JSON string
     payload_json = json.dumps(payload).replace(' ', '')
     
-    headers = get_header(logs, signature)
+    headers = get_header(account, signature)
     url = get_url(logs)
     
     # Define the fetch request as an asynchronous script

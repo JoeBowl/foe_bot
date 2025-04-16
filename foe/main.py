@@ -13,7 +13,7 @@ from models.account import Account
 
 from signature_generator2 import generateRequestPayloadSignature
 from sendRequest import getTavernData
-from getData import getData, getRequestId, getUserKey, getSalt, intercept_request_id
+from getData import intercept_request_id
 from gameActions.pickupAllProduction import pickupAllProduction, pickupBestPFProduction, checkPickupAllProduction, checkPickupBestPFProduction, pickupBlueGalaxyAndBestPFProduction
 from gameActions.startAllProduction import startAllProduction, checkStartAllProduction
 from gameActions.startAllProduction import startAllGoods, checkStartAllGoods
@@ -42,14 +42,11 @@ driver = webdriver.Chrome(options=chrome_options)
 
 account = Account()
 
-log_request = []
-log_response = []
 last_request_time = time.time()  # Track the last request timestamp
 
 # Define the request interceptor function
 def request_interceptor(request):
     global last_request_time
-    log_request.append(request)
     last_request_time = time.time()
     account.log_request(request)
     
@@ -66,11 +63,10 @@ def request_interceptor(request):
 
 # Define the response interceptor function with two parameters: request and response
 def response_interceptor(request, response):
-    log_response.append([request, response])
     account.log_response(request, response)
     
     if 'ForgeHX' in request.url:
-        account.salt = getSalt(request, response, verbose=True)
+        account.salt = account.get_salt(request, response, verbose=True)
 
 
 # Set the interceptors
@@ -115,49 +111,53 @@ world_button.click()
 
 
 
-# Wait until 5 seconds have passed with no new requests
-timeout = 5  # seconds
+# Wait until some time has passed with no new requests
+timeout = 8  # seconds
 while True:
     last_request_time = account.get_last_request_time()
-    
+
     if last_request_time is None:
         print("No requests yet. Waiting...")
     else:
-        # Make sure both are timezone-aware in UTC
         now = datetime.datetime.now(datetime.UTC)
-        if (now - last_request_time).total_seconds() >= timeout:
-            print("No new requests for 5 seconds. Continuing execution.")
+        elapsed = (now - last_request_time).total_seconds()
+
+        if elapsed >= timeout:
+            print(f"No new requests for {timeout:.2f} seconds. Continuing execution.")
             break
-        
+        else:
+            print(f"Last request was {elapsed:.2f}s ago. Waiting...")
+
     time.sleep(1)
 # wait_for_input = input("Click to start:")
 
 
 
 # Get city data
-data = getData(log_response)
+data = account.get_data()
 
 checkPickupBestPFProduction(data)
 collectBestPFs = input("collect best? (yes) or (no)")
 if collectBestPFs == "yes":
-    data = getData(log_response)
-    pickupBestPFProduction(data, driver, account.user_key, log_request, verbose=True)
+    data = account.get_data()
+    pickupBestPFProduction(data, driver, account, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     
-    # Wait until 5 seconds have passed with no new requests
-    timeout = 5  # Time to wait for inactivity
     while True:
-        if time.time() - last_request_time >= timeout:
-            print("No new requests for 5 seconds. Continuing execution.")
+        last_request_time = account.get_last_request_time()
+        now = datetime.datetime.now(datetime.UTC)
+        elapsed = (now - last_request_time).total_seconds()
+        if elapsed >= timeout:
+            print(f"No new requests for {timeout:.2f} seconds. Continuing execution.")
             break
-        time.sleep(0.1)  # Check every 0.1 seconds
+        time.sleep(0.5)  # Check every 0.1 seconds
 
 checkPickupAllProduction(data)
 collectAllPFs = input("collect all? (yes) or (no)")
 if collectAllPFs == "yes":
-    data = getData(log_response)
-    pickupAllProduction(data, driver, account.user_key, log_request, verbose=True)
+    data = account.get_data()
+    pickupAllProduction(data, driver, account, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     
@@ -167,8 +167,8 @@ if collectAllPFs == "yes":
 checkPickupBestPFProduction(data)
 collectBestPFs = input("collect best blue galaxy test? (yes) or (no)")
 if collectBestPFs == "yes":
-    data = getData(log_response)
-    pickupBlueGalaxyAndBestPFProduction(data, driver, account.user_key, log_request, verbose=True)
+    data = account.get_data()
+    pickupBlueGalaxyAndBestPFProduction(data, driver, account, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     

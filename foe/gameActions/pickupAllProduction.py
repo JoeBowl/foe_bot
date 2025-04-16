@@ -3,11 +3,11 @@ from sendRequest import pickupProduction
 import json
 
 # From data, checks all building that have finished production and collects them
-def pickupAllProduction(data, driver, user_key, logs, verbose=False):
+def pickupAllProduction(data, driver, account, verbose=False):
     building_ids = checkPickupAllProduction(data, verbose=False)
         
     if building_ids != []:
-        response = pickupProduction(building_ids, driver, user_key, logs)
+        response = pickupProduction(building_ids, driver, account)
     else:
         response = None
         
@@ -36,11 +36,11 @@ def checkPickupAllProduction(data, verbose=True):
 
 
 # From data, checks all building that have finished production and collects them
-def pickupBestPFProduction(data, driver, user_key, logs, verbose=False):
+def pickupBestPFProduction(data, driver, account, verbose=False):
     building_ids = checkPickupBestPFProduction(data, verbose=False)
         
     if building_ids != []:
-        response = pickupProduction(building_ids, driver, user_key, logs)
+        response = pickupProduction(building_ids, driver, account)
     else:
         response = None
     
@@ -101,14 +101,14 @@ def getBlueGalaxyId(data, verbose=False):
         if name == "X_OceanicFuture_Landmark3":
             return(building_id)
         
-def pickupBlueGalaxyAndBestPFProduction(data, driver, user_key, logs, verbose=False):
+def pickupBlueGalaxyAndBestPFProduction(data, driver, account, verbose=False):
     best_building_ids = checkPickupBestPFProduction(data, verbose=False)
     blue_galaxy_id = getBlueGalaxyId(data)
     
     building_ids = [blue_galaxy_id] + best_building_ids
         
     if building_ids != []:
-        response = pickupProduction(building_ids, driver, user_key, logs)
+        response = pickupProduction(building_ids, driver, account)
     else:
         response = None
     
