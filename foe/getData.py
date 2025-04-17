@@ -1,49 +1,5 @@
-import re
-import brotli
 import json
 import copy
-import zstandard as zstd
-import io
-
-def getLastLog(logs):
-    # Initialize a variable to store the last POST request
-    last_post_request = None
-    
-    # Iterate over the logs in reverse order to find the most recent POST request
-    for log in reversed(logs):   
-        # Extract the request details
-        url = log.url
-        method = log.method
-    
-        # Check if the request method is POST
-        if method != 'POST':
-            continue  # Skip if it's not a POST request
-            
-        if not("forgeofempires.com/game/json?h=" in url):
-            continue  # Skip if it's not from forge of empires
-    
-        # Found the most recent POST request
-        last_post_request = log
-        return(last_post_request)  # Exit the loop after finding the last POST request
-
-def getRequestId(logs):
-    # Get the last POST request
-    last_post_request = getLastLog(logs)
-    
-    # Check if a POST request was found
-    if last_post_request is None:
-        print("No POST requests were found.")
-        return(0)
-    
-    # Parse the JSON payload's post data
-    try:
-        post_data = json.loads(last_post_request.body)[0]
-    except json.JSONDecodeError as e:
-        print(f"Failed to parse payload' post data JSON: {e}, {last_post_request}")
-        return(0)
-    
-    request_id = post_data['requestId']
-    return(request_id+1)
 
 def intercept_request_id(request, last_request_id, user_key, verbose=False):
     def correct_requestId(request, last_request_id):

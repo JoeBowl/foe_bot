@@ -11,7 +11,6 @@ from selenium.common.exceptions import ElementNotInteractableException
 
 from models.account import Account
 
-from signature_generator2 import generateRequestPayloadSignature
 from sendRequest import getTavernData
 from getData import intercept_request_id
 from gameActions.pickupAllProduction import pickupAllProduction, pickupBestPFProduction, checkPickupAllProduction, checkPickupBestPFProduction, pickupBlueGalaxyAndBestPFProduction
@@ -136,11 +135,11 @@ while True:
 # Get city data
 data = account.get_data()
 
-checkPickupBestPFProduction(data)
+checkPickupBestPFProduction(data, top_n=7)
 collectBestPFs = input("collect best? (yes) or (no)")
 if collectBestPFs == "yes":
     data = account.get_data()
-    pickupBestPFProduction(data, driver, account, verbose=True)
+    pickupBestPFProduction(data, driver, account, top_n=7, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     

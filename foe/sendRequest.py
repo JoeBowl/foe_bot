@@ -1,8 +1,5 @@
 from signature_generator2 import generateRequestPayloadSignature
-from getData import getLastLog
-from getData import getRequestId
 import json
-import brotli
 
 def collectTavern(driver, account):
     request_id = account.last_request_id + 1

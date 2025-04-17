@@ -1,6 +1,5 @@
 from find_key_paths import find_key_paths
 from sendRequest import pickupProduction
-import json
 
 # From data, checks all building that have finished production and collects them
 def pickupAllProduction(data, driver, account, verbose=False):
@@ -36,8 +35,8 @@ def checkPickupAllProduction(data, verbose=True):
 
 
 # From data, checks all building that have finished production and collects them
-def pickupBestPFProduction(data, driver, account, verbose=False):
-    building_ids = checkPickupBestPFProduction(data, verbose=False)
+def pickupBestPFProduction(data, driver, account, top_n=15, verbose=False):
+    building_ids = checkPickupBestPFProduction(data, top_n, verbose=False)
         
     if building_ids != []:
         response = pickupProduction(building_ids, driver, account)
@@ -50,7 +49,7 @@ def pickupBestPFProduction(data, driver, account, verbose=False):
     return response
 
 # From data, checks all building that have finished production and collects them
-def checkPickupBestPFProduction(data, verbose=True):
+def checkPickupBestPFProduction(data, top_n=15, verbose=True):
     paths = find_key_paths(data, '__class__', 'ProductionFinishedState')
     
     building_pf_list = []  # List to store tuples of (building_id, name, PFs)
@@ -73,12 +72,12 @@ def checkPickupBestPFProduction(data, verbose=True):
                     PFs = product['playerResources']['resources']['strategy_points']
                     building_pf_list.append((building_id, name, PFs))  # Store all info
     
-    # Sort by PFs in descending order and get the top 15
-    top_buildings = sorted(building_pf_list, key=lambda x: x[2], reverse=True)[:15]
+    # Sort by PFs in descending order and get the top n
+    top_buildings = sorted(building_pf_list, key=lambda x: x[2], reverse=True)[:top_n]
 
     # Print results
     if verbose:
-        print("Top 15 Buildings with Highest PFs:")
+        print(f"Top {top_n} Buildings with Highest PFs:")
         for building_id, name, pfs in top_buildings:
             print("Name:", name, "id:", building_id, "PFs:", pfs)
             
@@ -101,8 +100,8 @@ def getBlueGalaxyId(data, verbose=False):
         if name == "X_OceanicFuture_Landmark3":
             return(building_id)
         
-def pickupBlueGalaxyAndBestPFProduction(data, driver, account, verbose=False):
-    best_building_ids = checkPickupBestPFProduction(data, verbose=False)
+def pickupBlueGalaxyAndBestPFProduction(data, driver, account, top_n=15, verbose=False):
+    best_building_ids = checkPickupBestPFProduction(data, top_n, verbose=False)
     blue_galaxy_id = getBlueGalaxyId(data)
     
     building_ids = [blue_galaxy_id] + best_building_ids
