@@ -124,8 +124,8 @@ while True:
         if elapsed >= timeout:
             print(f"No new requests for {timeout:.2f} seconds. Continuing execution.")
             break
-        else:
-            print(f"Last request was {elapsed:.2f}s ago. Waiting...")
+        # else:
+            # print(f"Last request was {elapsed:.2f}s ago. Waiting...")
 
     time.sleep(1)
 # wait_for_input = input("Click to start:")
@@ -134,12 +134,13 @@ while True:
 
 # Get city data
 data = account.get_data()
+# print(json.dumps(data[5], indent=4))
 
-checkPickupBestPFProduction(data, top_n=7)
+checkPickupBestPFProduction(data, top_n=15)
 collectBestPFs = input("collect best? (yes) or (no)")
 if collectBestPFs == "yes":
     data = account.get_data()
-    pickupBestPFProduction(data, driver, account, top_n=7, verbose=True)
+    pickupBestPFProduction(data, driver, account, top_n=15, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     

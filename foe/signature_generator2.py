@@ -1,8 +1,9 @@
 import hashlib
 import json
 
-def generateRequestPayloadSignature(payload, signatureHash):
-    salt = "NDKtXyojc7FgUPNpfRbU5Kx/FwiEF0nz1RBS8H9A5499ktvC4OoZhoeKqgIZR/2en8+LiPiEoW8ZFPuX3faDng=="
+def generateRequestPayloadSignature(payload, account):
+    signatureHash = account.user_key
+    salt = account.salt
     
     # Convert payload to JSON string
     json_payload = json.dumps(payload).replace(' ', '')

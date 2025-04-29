@@ -143,13 +143,13 @@ def get_header(account, signature):
         "client-identification",
         "content-type",
         "priority",
+        "user-agent",
         "sec-ch-ua",
         "sec-ch-ua-mobile",
         "sec-ch-ua-platform",
         "sec-fetch-dest",
         "sec-fetch-mode",
-        "sec-fetch-site",
-        "signature"
+        "sec-fetch-site"
     ]
     
     filtered_headers = {key: headers_dict[key] for key in keys_to_include if key in headers_dict}
@@ -165,7 +165,7 @@ def sendRequest(driver, payload, account):
     user_key = account.user_key
     logs = account.get_log_request_old()
     
-    signature = generateRequestPayloadSignature(payload, user_key)
+    signature = generateRequestPayloadSignature(payload, account)
     print(payload, user_key, signature)
     
     # Serialize the payload to a JSON string
