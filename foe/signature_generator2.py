@@ -34,7 +34,7 @@ if __name__ == "__main__":
         }
     ]
     
-    signature = generateRequestPayloadSignature(payload, signatureHash)
+    signature = generateRequestPayloadSignature(payload, account)
     
     print("Generated Signature:", signature)
     

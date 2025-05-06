@@ -153,6 +153,7 @@ if collectBestPFs == "yes":
             break
         time.sleep(0.5)  # Check every 0.1 seconds
 
+data = account.get_data()
 checkPickupAllProduction(data)
 collectAllPFs = input("collect all? (yes) or (no)")
 if collectAllPFs == "yes":
