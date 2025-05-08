@@ -1,7 +1,7 @@
 import json
 import copy
 
-def intercept_request_id(request, last_request_id, user_key, verbose=False):
+def intercept_request_id(request, account, verbose=False):
     def correct_requestId(request, last_request_id):
         from signature_generator2 import generateRequestPayloadSignature
         
@@ -23,7 +23,7 @@ def intercept_request_id(request, last_request_id, user_key, verbose=False):
         for key, value in original_headers:
             del new_request.headers[key]
             if key == "signature":
-                new_request.headers[key] = generateRequestPayloadSignature(new_request_data, user_key)
+                new_request.headers[key] = generateRequestPayloadSignature(new_request_data, account)
             elif key == "content-length":
                 new_request.headers[key] = f"{len(new_request_body)}"
             else:
@@ -31,6 +31,7 @@ def intercept_request_id(request, last_request_id, user_key, verbose=False):
                 
         return(new_request)
     
+    last_request_id = account.last_request_id
     if verbose:
         print(f"Request to {request.url}:")
     
