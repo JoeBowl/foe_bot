@@ -2,6 +2,16 @@ import datetime
 import time
 import json
 
+from pathlib import Path
+import os
+
+# Get the directory where the current script is located
+script_dir = Path(__file__).parent.resolve()  # Works in Python 3.6+
+print(script_dir)
+
+# Change the working directory to the script's directory
+os.chdir(script_dir)
+
 from seleniumwire import webdriver  # note the change here
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -57,7 +67,7 @@ def request_interceptor(request):
             account.user_key = user_key
             print(f"The user key is: {user_key}")
             
-        last_request_id = intercept_request_id(request, account.last_request_id, user_key, verbose=True)
+        last_request_id = intercept_request_id(request, account, verbose=True)
         account.last_request_id = last_request_id
 
 # Define the response interceptor function with two parameters: request and response
@@ -133,38 +143,27 @@ while True:
 
 
 # Get city data
-data = account.get_data()
+# data = account.get_data()
 # print(json.dumps(data[5], indent=4))
 
+data = account.get_data()
 checkPickupBestPFProduction(data, top_n=15)
 collectBestPFs = input("collect best? (yes) or (no)")
 if collectBestPFs == "yes":
-    data = account.get_data()
     pickupBestPFProduction(data, driver, account, top_n=15, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     
-    while True:
-        last_request_time = account.get_last_request_time()
-        now = datetime.datetime.now(datetime.UTC)
-        elapsed = (now - last_request_time).total_seconds()
-        if elapsed >= timeout:
-            print(f"No new requests for {timeout:.2f} seconds. Continuing execution.")
-            break
-        time.sleep(0.5)  # Check every 0.1 seconds
 
 data = account.get_data()
 checkPickupAllProduction(data)
 collectAllPFs = input("collect all? (yes) or (no)")
 if collectAllPFs == "yes":
-    data = account.get_data()
     pickupAllProduction(data, driver, account, verbose=True)
     time.sleep(500/1000)
     driver.refresh()
     
     
-    
-
 checkPickupBestPFProduction(data)
 collectBestPFs = input("collect best blue galaxy test? (yes) or (no)")
 if collectBestPFs == "yes":
