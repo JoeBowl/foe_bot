@@ -23,7 +23,7 @@ def intercept_request_id(request, account, verbose=False):
         for key, value in original_headers:
             del new_request.headers[key]
             if key == "signature":
-                new_request.headers[key] = generateRequestPayloadSignature(new_request_data, account)
+                new_request.headers[key] = generateRequestPayloadSignature(new_request_data, account.user_key, account.salt)
             elif key == "content-length":
                 new_request.headers[key] = f"{len(new_request_body)}"
             else:

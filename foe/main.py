@@ -22,7 +22,7 @@ from selenium.common.exceptions import ElementNotInteractableException
 from models.account import Account
 
 from sendRequest import getTavernData
-from getData import intercept_request_id
+from interceptRequest import intercept_request_id
 from gameActions.pickupAllProduction import pickupAllProduction, pickupBestPFProduction, checkPickupAllProduction, checkPickupBestPFProduction, pickupBlueGalaxyAndBestPFProduction
 from gameActions.startAllProduction import startAllProduction, checkStartAllProduction
 from gameActions.startAllProduction import startAllGoods, checkStartAllGoods

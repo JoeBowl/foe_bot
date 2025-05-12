@@ -165,7 +165,7 @@ def sendRequest(driver, payload, account):
     user_key = account.user_key
     logs = account.get_log_request_old()
     
-    signature = generateRequestPayloadSignature(payload, account)
+    signature = generateRequestPayloadSignature(payload, account.user_key, account.salt)
     print(payload, user_key, signature)
     
     # Serialize the payload to a JSON string

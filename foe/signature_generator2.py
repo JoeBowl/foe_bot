@@ -1,10 +1,7 @@
 import hashlib
 import json
 
-def generateRequestPayloadSignature(payload, account):
-    signatureHash = account.user_key
-    salt = account.salt
-    
+def generateRequestPayloadSignature(payload, signatureHash, salt):
     # Convert payload to JSON string
     json_payload = json.dumps(payload).replace(' ', '')
     
@@ -23,6 +20,7 @@ def generateRequestPayloadSignature(payload, account):
 if __name__ == "__main__":
     # Define your components
     signatureHash = 'uY9Y8ltFhBxQyakYYPmLJzkw'
+    salt = "8EgkvPU/5Fe3b07lOTzxLR0eyK3jn6r0F1s2xPEGc4s/c2cmPhAUYEuwUqU/ngLl1widOt+wheQrROOoh5IyUQ=="
     
     payload = [
         {
@@ -34,7 +32,7 @@ if __name__ == "__main__":
         }
     ]
     
-    signature = generateRequestPayloadSignature(payload, account)
+    signature = generateRequestPayloadSignature(payload, signatureHash, salt)
     
     print("Generated Signature:", signature)
     
