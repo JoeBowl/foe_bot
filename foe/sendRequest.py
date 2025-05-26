@@ -79,7 +79,7 @@ def collectQuest(questId, driver, account):
     ]
     return(sendRequest(driver, payload, account))
 
-# Sends a pickupProduction request and returns the server's response
+# Sends a collectReward request and returns the server's response
 def collectReward(hiddenRewardId, driver, account):
     request_id = account.last_request_id + 1
     payload = [
