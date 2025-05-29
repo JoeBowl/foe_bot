@@ -1,17 +1,15 @@
+# General imports
 import datetime
+import pathlib
 import time
 import json
-
-from pathlib import Path
 import os
 
 # Get the directory where the current script is located
-script_dir = Path(__file__).parent.resolve()  # Works in Python 3.6+
-print(script_dir)
+script_dir = pathlib.Path(__file__).parent.resolve()  # Works in Python 3.6+
+os.chdir(script_dir)    # Change the working directory to the script's directory
 
-# Change the working directory to the script's directory
-os.chdir(script_dir)
-
+# Selenium imports, used to open the browser and have access to requests and responses
 from seleniumwire import webdriver  # note the change here
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -19,8 +17,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import ElementNotInteractableException
 
+# Class and script imports
 from models.account import Account
-
 from sendRequest import getTavernData
 from interceptRequest import intercept_request_id
 from gameActions.pickupAllProduction import pickupAllProduction, pickupBestPFProduction, checkPickupAllProduction, checkPickupBestPFProduction, pickupBlueGalaxyAndBestPFProduction
@@ -59,7 +57,6 @@ def request_interceptor(request):
     last_request_time = time.time()
     account.log_request(request)
     
-    # Check if the request URL contains 'forgeofempires.com/game/json?h='
     if "forgeofempires.com/game/json?h=" in request.url:
         last_user_key = account.user_key
         user_key = account.get_user_key()
@@ -76,6 +73,11 @@ def response_interceptor(request, response):
     
     if 'ForgeHX' in request.url:
         account.salt = account.get_salt(request, response, verbose=True)
+        
+    if "forgeofempires.com/game/json?h=" in request.url:
+        if "getData" in request.body.decode('utf-8'):
+            account.data = account.get_data()
+            print("Data updated!")
 
 
 # Set the interceptors
@@ -120,6 +122,10 @@ world_button.click()
 
 
 
+
+
+
+
 # Wait until some time has passed with no new requests
 timeout = 8  # seconds
 while True:
@@ -138,15 +144,11 @@ while True:
             # print(f"Last request was {elapsed:.2f}s ago. Waiting...")
 
     time.sleep(1)
-# wait_for_input = input("Click to start:")
 
 
 
-# Get city data
-# data = account.get_data()
-# print(json.dumps(data[5], indent=4))
 
-data = account.get_data()
+data = account.data
 checkPickupBestPFProduction(data, top_n=15)
 collectBestPFs = input("collect best? (yes) or (no)")
 if collectBestPFs == "yes":
@@ -155,7 +157,6 @@ if collectBestPFs == "yes":
     driver.refresh()
     
 
-data = account.get_data()
 checkPickupAllProduction(data)
 collectAllPFs = input("collect all? (yes) or (no)")
 if collectAllPFs == "yes":
@@ -167,7 +168,6 @@ if collectAllPFs == "yes":
 checkPickupBestPFProduction(data)
 collectBestPFs = input("collect best blue galaxy test? (yes) or (no)")
 if collectBestPFs == "yes":
-    data = account.get_data()
     pickupBlueGalaxyAndBestPFProduction(data, driver, account, verbose=True)
     time.sleep(500/1000)
     driver.refresh()

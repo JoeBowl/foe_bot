@@ -13,6 +13,7 @@ class Account:
         self.last_request_id = last_request_id
         self.request_log = deque(maxlen=log_limit)
         self.response_log = deque(maxlen=log_limit)
+        self.data = []
 
     def log_request(self, request):
         self.request_log.append({
