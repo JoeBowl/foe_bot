@@ -3,7 +3,7 @@ from sendRequest import pickupProduction
 
 # From data, checks all building that have finished production and collects them
 def pickupAllProduction(data, driver, account, verbose=False):
-    building_ids = checkPickupAllProduction(data, verbose=False)
+    building_ids, _ = checkPickupAllProduction(data, verbose=False)
         
     if building_ids != []:
         response = pickupProduction(building_ids, driver, account)
@@ -20,23 +20,27 @@ def checkPickupAllProduction(data, verbose=True):
     paths = find_key_paths(data, '__class__', 'ProductionFinishedState')
     
     building_ids = []
+    building_names = []
     for path in paths:
         buildingInfo = data[path[0]][path[1]][path[2]][path[3]][path[4]]
         name = buildingInfo['cityentity_id']
         building_id = buildingInfo['id']
             
         building_ids.append(building_id)
+        building_names.append(name)
         
         if verbose:
             print("Name:", name, "id:", building_id)
             
-    return building_ids
+    return building_ids, building_names
+
+
 
 
 
 # From data, checks all building that have finished production and collects them
 def pickupBestPFProduction(data, driver, account, top_n=15, verbose=False):
-    building_ids = checkPickupBestPFProduction(data, top_n, verbose=False)
+    building_ids, _, _ = checkPickupBestPFProduction(data, top_n, verbose=False)
         
     if building_ids != []:
         response = pickupProduction(building_ids, driver, account)
@@ -75,18 +79,24 @@ def checkPickupBestPFProduction(data, top_n=15, verbose=True):
     # Sort by PFs in descending order and get the top n
     top_buildings = sorted(building_pf_list, key=lambda x: x[2], reverse=True)[:top_n]
 
+    building_ids = []
+    building_names = []
+    building_pfs = []
+    for building_id, name, pfs in top_buildings:
+        building_ids.append(building_id)
+        building_names.append(name)
+        building_pfs.append(pfs)
+        
     # Print results
     if verbose:
         print(f"Top {top_n} Buildings with Highest PFs:")
         for building_id, name, pfs in top_buildings:
             print("Name:", name, "id:", building_id, "PFs:", pfs)
-            
-    # Print results
-    building_ids = []
-    for building_id, name, pfs in top_buildings:
-        building_ids.append(building_id)
     
-    return building_ids
+    return building_ids, building_names, building_pfs
+
+
+
 
 
 def getBlueGalaxyId(data, verbose=False):
@@ -115,6 +125,9 @@ def pickupBlueGalaxyAndBestPFProduction(data, driver, account, top_n=15, verbose
         print(response)
         
     return response
+
+
+
 
         
 if __name__ == "__main__":

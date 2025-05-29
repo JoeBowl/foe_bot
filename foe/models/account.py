@@ -1,3 +1,4 @@
+from find_key_paths import find_key_paths
 from collections import deque
 import zstandard as zstd
 import datetime
@@ -8,12 +9,13 @@ import io
 
 class Account:
     def __init__(self, user_key=None, salt=None, last_request_id=0, log_limit=1000):
-        self.user_key = user_key
-        self.salt = salt
+        self.user_key        = user_key
+        self.salt            = salt
         self.last_request_id = last_request_id
-        self.request_log = deque(maxlen=log_limit)
-        self.response_log = deque(maxlen=log_limit)
-        self.data = []
+        self.request_log     = deque(maxlen=log_limit)
+        self.response_log    = deque(maxlen=log_limit)
+        self.data            = None
+        self.server_time     = None
 
     def log_request(self, request):
         self.request_log.append({
@@ -63,31 +65,67 @@ class Account:
         else:
             return datetime.datetime.fromisoformat(last_request['timestamp']).replace(tzinfo=datetime.UTC)
         
-    def get_data(self):
-        for entry in reversed(self.response_log):
-            request  = entry['request']
-            response = entry['response']
-            if "forgeofempires.com/game/json?h=" in request.url:
-                if request.body:  # Ensure there is a body to decode
-                    decoded_body = request.body.decode('utf-8')  # Convert bytes to string
-                    json_data = json.loads(decoded_body)  # Convert string to Python object
+    def get_data(self, request = None, response = None):
+        if request == None and response == None:
+            for entry in reversed(self.response_log):
+                request  = entry['request']
+                response = entry['response']
+                if "forgeofempires.com/game/json?h=" in request.url:
+                    if "getData" in request.body.decode('utf-8'):
+                        break
                     
-                    for data in json_data:
-                        if data['requestMethod'] == 'getData':
-                            try:
-                                # Check if the response is Brotli compressed
-                                if 'br' in response.headers.get('content-encoding', ''):
-                                    decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
-                                else:
-                                    decompressed_body = response.body  # No compression, use raw body
-                                
-                                # Decode the response (assuming it's UTF-8)
-                                decoded_response_body = decompressed_body.decode('utf-8')
-                                json_response_data = json.loads(decoded_response_body)
-                                
-                                return(json_response_data[1:])
-                            except Exception as e:
-                                print("Could not decode response body:", e)
+        decoded_body = request.body.decode('utf-8')  # Convert bytes to string
+        json_data = json.loads(decoded_body)  # Convert string to Python object
+        
+        for data in json_data:
+            if data['requestMethod'] == 'getData':
+                try:
+                    # Check if the response is Brotli compressed
+                    if 'br' in response.headers.get('content-encoding', ''):
+                        decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
+                    else:
+                        decompressed_body = response.body  # No compression, use raw body
+                    
+                    # Decode the response (assuming it's UTF-8)
+                    decoded_response_body = decompressed_body.decode('utf-8')
+                    json_response_data = json.loads(decoded_response_body)
+                    
+                    return(json_response_data[1:])
+                except Exception as e:
+                    print("Could not decode response body:", e)
+                    
+    def get_server_time(self, request = None, response = None):
+        if request == None and response == None:
+            for entry in reversed(self.response_log):
+                request  = entry['request']
+                response = entry['response']
+                if "forgeofempires.com/game/json?h=" in request.url:
+                    if "LogService" in request.body.decode('utf-8'):
+                        break
+                    
+        decoded_body = request.body.decode('utf-8')  # Convert bytes to string
+        json_data = json.loads(decoded_body)  # Convert string to Python object
+        
+        for data in json_data:
+            if data['requestClass'] == 'LogService':
+                try:
+                    # Check if the response is Brotli compressed
+                    if 'br' in response.headers.get('content-encoding', ''):
+                        decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
+                    else:
+                        decompressed_body = response.body  # No compression, use raw body
+                    
+                    # Decode the response (assuming it's UTF-8)
+                    decoded_response_body = decompressed_body.decode('utf-8')
+                    json_response_data = json.loads(decoded_response_body)
+                    
+                    path = find_key_paths(json_response_data, 'requestClass', 'TimeService')[0][:-1]  # remove the last key to get to the parent object
+                    for key in path:
+                        json_response_data = json_response_data[key]
+                    
+                    return(json_response_data['responseData']['time'])
+                except Exception as e:
+                    print("Could not decode response body:", e)
                                 
     def get_user_key(self, verbose=False):    
         last_request = self.get_last_log(url="forgeofempires.com/game/json?h=", method="POST")

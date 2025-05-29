@@ -46,7 +46,6 @@ chrome_options.add_argument("--mute-audio")
 # chrome_options.add_argument('--auto-open-devtools-for-tabs')
 
 driver = webdriver.Chrome(options=chrome_options)
-
 account = Account()
 
 last_request_time = time.time()  # Track the last request timestamp
@@ -75,9 +74,15 @@ def response_interceptor(request, response):
         account.salt = account.get_salt(request, response, verbose=True)
         
     if "forgeofempires.com/game/json?h=" in request.url:
-        if "getData" in request.body.decode('utf-8'):
-            account.data = account.get_data()
+        request_body = request.body.decode('utf-8')
+        
+        if "getData" in request_body:
+            account.data = account.get_data(request, response)
             print("Data updated!")
+            
+        if "LogService" in request_body:
+            account.server_time = account.get_server_time(request, response)
+            print("Server time updated!")
 
 
 # Set the interceptors
@@ -126,29 +131,98 @@ world_button.click()
 
 
 
-# Wait until some time has passed with no new requests
-timeout = 8  # seconds
-while True:
-    last_request_time = account.get_last_request_time()
+import tkinter as tk
 
-    if last_request_time is None:
-        print("No requests yet. Waiting...")
-    else:
-        now = datetime.datetime.now(datetime.UTC)
-        elapsed = (now - last_request_time).total_seconds()
+def button1_action():
+    top_n = 15
+    building_ids, building_names, building_pfs = checkPickupBestPFProduction(account.data, top_n, verbose=False)
+    
+    # Print results
+    msg = f"Top {top_n} Buildings with Highest PFs:"
+    for building_id, name, pfs in zip(building_ids, building_names, building_pfs):
+        msg = msg + "\n" + f"Name: {name} id: {building_id} PFs: {pfs}"
+    display_message(msg)
+    # width, height = check_size(btn1)
+    # display_message(f"Button 1 size: {width}x{height}px")
 
-        if elapsed >= timeout:
-            print(f"No new requests for {timeout:.2f} seconds. Continuing execution.")
-            break
-        # else:
-            # print(f"Last request was {elapsed:.2f}s ago. Waiting...")
+def button2_action():
+    top_n = 15
+    pickupBestPFProduction(account.data, driver, account, top_n=top_n, verbose=True)
+    display_message(f"Top {top_n} Buildings Collected!")
+    
+def button3_action():
+    building_ids, building_names = checkPickupAllProduction(account.data, verbose=False)
+    
+    # Print results
+    msg = f"Buildings Ready to Pick Up:"
+    for building_id, name in zip(building_ids, building_names):
+        msg = msg + "\n" + f"Name: {name} id: {building_id}"
+    display_message(msg)
+    
+def button4_action():
+    pickupAllProduction(account.data, driver, account, verbose=True)
+    display_message(f"All Finished Productions Collected!")
+    
+def button5_action():
+    reward_names, reward_ids = checkCollectAllReward(account.data, account.server_time, verbose = False)
+    
+    # Print results
+    msg = f"Hidden Rewards Ready to Collect:"
+    for reward_name, reward_id in zip(reward_names, reward_ids):
+        msg = msg + "\n" + f"Name: {reward_name} id: {reward_id}"
+    display_message(msg)
+    
+def button6_action():
+    collectAllReward(account.data, account.server_time, driver, account, verbose=True)
+    display_message(f"All Hidden Rewards Collected!")
+    
+def check_size(button):
+    button.update_idletasks()
+    return(button.winfo_width(), button.winfo_height())
 
-    time.sleep(1)
+# NEW FUNCTION: Add messages to display
+def display_message(message):
+    display_area.configure(state='normal')  # Enable editing
+    display_area.insert(tk.END, message + "\n")  # Add message
+    display_area.configure(state='disabled')  # Disable editing
+    display_area.see(tk.END)  # Auto-scroll to bottom
+
+# Create main window
+root = tk.Tk()
+root.title("Simple Button UI")
+root.geometry("600x400")  # Increased height for display area
+
+# NEW: Create display area with scrollbar
+display_frame = tk.Frame(root)
+display_frame.place(x=10, y=10, width=580, height=150)
+
+scrollbar = tk.Scrollbar(display_frame)
+scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+display_area = tk.Text(display_frame, yscrollcommand=scrollbar.set, state='disabled')
+display_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+scrollbar.config(command=display_area.yview)
+
+# Create buttons (adjusted y-positions)
+btn1 = tk.Button(root, text="print best pf production", command=button1_action, height=2, width=20)
+btn2 = tk.Button(root, text="collect best production", command=button2_action, height=2, width=20)
+btn3 = tk.Button(root, text="print finished production", command=button3_action, height=2, width=20)
+btn4 = tk.Button(root, text="collect finished production", command=button4_action, height=2, width=20)
+btn5 = tk.Button(root, text="print hidden rewards", command=button5_action, height=2, width=20)
+btn6 = tk.Button(root, text="collect hidden rewards", command=button6_action, height=2, width=20)
+
+# Place buttons (positioned below display area)
+btn1.place(x=10, y=170)    # 170 instead of 10
+btn2.place(x=440, y=170)   # 170 instead of 10
+btn3.place(x=10, y=220)    # 220 instead of 60
+btn4.place(x=440, y=220)   # 220 instead of 60
+btn5.place(x=10, y=270)    # 220 instead of 60
+btn6.place(x=440, y=270)   # 220 instead of 60
+
+root.mainloop()
 
 
 
-
-data = account.data
 checkPickupBestPFProduction(data, top_n=15)
 collectBestPFs = input("collect best? (yes) or (no)")
 if collectBestPFs == "yes":

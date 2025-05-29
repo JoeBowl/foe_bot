@@ -4,8 +4,8 @@ import json
 import copy
 
 # From data, checks all hidden rewards and collects them
-def collectAllReward(data, driver, account, verbose=False):
-    reward_ids = checkCollectAllReward(data, verbose=False)
+def collectAllReward(data, server_time, driver, account, verbose=False):
+    _, reward_ids = checkCollectAllReward(data, server_time, verbose=False)
     
     if reward_ids == []:
         return None
@@ -20,18 +20,18 @@ def collectAllReward(data, driver, account, verbose=False):
 
 
 # From data, checks all hidden rewards
-def checkCollectAllReward(data, verbose = True, debug_verbose = False):
+def checkCollectAllReward(data, server_time, verbose = True, debug_verbose = False):
     paths = find_key_paths(data, 'requestClass', 'HiddenRewardService')
-    server_time = getServerTime(data)
     
     # Pick the first path
-    path = paths[0][:-1]  # remove the last key 'requestClass' to get to the parent object
+    path = paths[0][:-1]  # remove the last key to get to the parent object
     
     # Get the hidden rewards data
     rewards_data = copy.deepcopy(data)
     for key in path:
         rewards_data = rewards_data[key]
     
+    reward_names = []
     reward_ids = []
     for reward_data in rewards_data["responseData"]["hiddenRewards"]:
         reward_startTime = reward_data["startTime"]
@@ -40,6 +40,7 @@ def checkCollectAllReward(data, verbose = True, debug_verbose = False):
             reward_name = reward_data["type"]
             reward_id = reward_data["hiddenRewardId"]
             
+            reward_names.append(reward_name)
             reward_ids.append(reward_id)
             
             if verbose:
@@ -51,32 +52,12 @@ def checkCollectAllReward(data, verbose = True, debug_verbose = False):
         print(data[13] == data[22])
         print(path)
             
-    return reward_ids
+    return reward_names, reward_ids
         
-def getServerTime(data, verbose = False):
-    paths = find_key_paths(data, 'requestClass', 'TimeService')
-    
-    if not paths:
-        raise ValueError("getServerTime: No matching path found for requestClass = 'TimeService'")
-    
-    # Pick the first path
-    path = paths[0][:-1]  # remove the last key 'requestClass' to get to the parent object
-    
-    # Get the time data
-    time_data = copy.deepcopy(data)
-    for key in path:
-        time_data = time_data[key]
 
-    time = int(time_data["responseData"]["time"])
-    
-    if verbose:
-        print(paths)
-        print(path)
-        print(json.dumps(time_data, indent=2))
-        print(time)
-    
-    return time
-        
+
+
+
 if __name__ == "__main__":
     print(checkCollectAllReward(data, verbose=True))
     # getServerTime(data)
