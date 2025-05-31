@@ -25,7 +25,7 @@ def checkCollectAllReward(data, server_time, verbose = True, debug_verbose = Fal
     
     # Pick the first path
     path = paths[0][:-1]  # remove the last key to get to the parent object
-    
+
     # Get the hidden rewards data
     rewards_data = copy.deepcopy(data)
     for key in path:
@@ -34,17 +34,21 @@ def checkCollectAllReward(data, server_time, verbose = True, debug_verbose = Fal
     reward_names = []
     reward_ids = []
     for reward_data in rewards_data["responseData"]["hiddenRewards"]:
-        reward_startTime = reward_data["startTime"]
+        if "startTime" in reward_data:
+            reward_startTime = reward_data["startTime"]
+            reward_expireTime = reward_data["expireTime"]
         
-        if server_time >= reward_startTime and server_time < reward_data["expireTime"]:
-            reward_name = reward_data["type"]
-            reward_id = reward_data["hiddenRewardId"]
-            
-            reward_names.append(reward_name)
-            reward_ids.append(reward_id)
-            
-            if verbose:
-                print(reward_id, reward_name)
+            if server_time < reward_startTime or server_time >= reward_expireTime:
+                continue
+        
+        reward_name = reward_data["type"]
+        reward_id = reward_data["hiddenRewardId"]
+        
+        reward_names.append(reward_name)
+        reward_ids.append(reward_id)
+        
+        if verbose:
+            print(reward_id, reward_name)
         
     if debug_verbose:
         print(json.dumps(rewards_data, indent=2))

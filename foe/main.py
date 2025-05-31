@@ -36,8 +36,8 @@ with open('config.json') as f:
     config = json.load(f)
 LOGIN_URL = config["URL"]
 worldname = config["worldname"]
-username = config["username"]
-password = config["password"]
+username = config["username3"]
+password = config["password3"]
 
 # Set up Chrome options
 chrome_options = Options()
@@ -223,28 +223,28 @@ root.mainloop()
 
 
 
-checkPickupBestPFProduction(data, top_n=15)
-collectBestPFs = input("collect best? (yes) or (no)")
-if collectBestPFs == "yes":
-    pickupBestPFProduction(data, driver, account, top_n=15, verbose=True)
-    time.sleep(500/1000)
-    driver.refresh()
-    
-
-checkPickupAllProduction(data)
-collectAllPFs = input("collect all? (yes) or (no)")
-if collectAllPFs == "yes":
-    pickupAllProduction(data, driver, account, verbose=True)
-    time.sleep(500/1000)
-    driver.refresh()
-    
-    
-checkPickupBestPFProduction(data)
-collectBestPFs = input("collect best blue galaxy test? (yes) or (no)")
-if collectBestPFs == "yes":
-    pickupBlueGalaxyAndBestPFProduction(data, driver, account, verbose=True)
-    time.sleep(500/1000)
-    driver.refresh()
+# checkPickupBestPFProduction(data, top_n=15)
+# collectBestPFs = input("collect best? (yes) or (no)")
+# if collectBestPFs == "yes":
+#     pickupBestPFProduction(data, driver, account, top_n=15, verbose=True)
+#     time.sleep(500/1000)
+#     driver.refresh()
+#     
+# 
+# checkPickupAllProduction(data)
+# collectAllPFs = input("collect all? (yes) or (no)")
+# if collectAllPFs == "yes":
+#     pickupAllProduction(data, driver, account, verbose=True)
+#     time.sleep(500/1000)
+#     driver.refresh()
+#     
+#     
+# checkPickupBestPFProduction(data)
+# collectBestPFs = input("collect best blue galaxy test? (yes) or (no)")
+# if collectBestPFs == "yes":
+#     pickupBlueGalaxyAndBestPFProduction(data, driver, account, verbose=True)
+#     time.sleep(500/1000)
+#     driver.refresh()
     
 # blue galaxy - X_OceanicFuture_Landmark3
 
