@@ -59,7 +59,7 @@ def intercept_request_id(request, account, verbose=False):
         
     if request_ids[0] <= last_request_id:
         new_request = correct_requestId(request, last_request_id)
-        print(f"Correcting id from {new_request} to {last_request_id}")
+        print(f"Correcting id from {new_request} to {last_request_id+1}")
         
         request.body = new_request.body
         request.headers = new_request.headers
