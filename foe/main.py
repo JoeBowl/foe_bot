@@ -37,8 +37,8 @@ with open('config.json') as f:
     config = json.load(f)
 LOGIN_URL = config["URL"]
 worldname = config["worldname"]
-username = config["username"]
-password = config["password"]
+username = config["username3"]
+password = config["password3"]
 
 # Set up Chrome options
 chrome_options = Options()
@@ -92,7 +92,7 @@ def response_interceptor(request, response):
             city.get_hidden_rewards_data(request, response)
             print("Hidden rewards data updated!")
             
-        if "pickupProduction" in request_body:
+        if ("pickupProduction" in request_body) or ("UseItemOnBuildingPayload" in request_body):
             city.update_buildings_data(request, response)
             print("Buildings data updated!")
 

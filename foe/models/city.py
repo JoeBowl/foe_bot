@@ -90,22 +90,23 @@ class City:
         # Decode the response (assuming it's UTF-8)
         decoded_response_body = decompressed_body.decode('utf-8')
         json_response_data = json.loads(decoded_response_body)
+        # print(json.dumps(json_response_data, indent=2))
         
-        # Check where the updated entities information is
-        path = find_key_paths(json_response_data, target_key = 'updatedEntities')[0]
+        # Find the paths for the updated entities
+        paths = find_key_paths(json_response_data, target_key = 'cityentity_id')
         
-        # Retrieve the updated entities information
-        updated_buildings_data = copy.deepcopy(json_response_data)
-        for key in path:
-            updated_buildings_data = updated_buildings_data[key]
-            
-        # Load old entities data
-        buildings_data = self.buildings_data
+        # Load old city data
+        old_buildings_data = self.buildings_data
         
-        # Replace the old entities information with the new one
-        for updated_building_data in updated_buildings_data:
-            for i, building_data in enumerate(buildings_data):
-                if updated_building_data["id"] == building_data["id"]:
-                    # print(json.dumps(building_data, indent=2))
+        for path in paths:
+            # Get the updated data for each building
+            updated_building_data = copy.deepcopy(json_response_data)
+            for key in path[:-1]:
+                updated_building_data = updated_building_data[key]
+                
+            # Replace old information for newer one
+            for i, old_building_data in enumerate(old_buildings_data):
+                if updated_building_data["id"] == old_building_data["id"]:
+                    # print(json.dumps(old_building_data, indent=2))
                     # print(json.dumps(updated_building_data, indent=2))
-                    self.buildings_data[i] = updated_building_data
+                    old_building_data.update(updated_building_data)
