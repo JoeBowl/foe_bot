@@ -19,6 +19,7 @@ from selenium.common.exceptions import ElementNotInteractableException
 
 # Class and script imports
 from models.account import Account
+from models.city import City
 from sendRequest import getTavernData
 from interceptRequest import intercept_request_id
 from gameActions.pickupAllProduction import pickupAllProduction, pickupBestPFProduction, checkPickupAllProduction, checkPickupBestPFProduction, pickupBlueGalaxyAndBestPFProduction
@@ -36,8 +37,8 @@ with open('config.json') as f:
     config = json.load(f)
 LOGIN_URL = config["URL"]
 worldname = config["worldname"]
-username = config["username3"]
-password = config["password3"]
+username = config["username"]
+password = config["password"]
 
 # Set up Chrome options
 chrome_options = Options()
@@ -46,6 +47,7 @@ chrome_options.add_argument("--mute-audio")
 # chrome_options.add_argument('--auto-open-devtools-for-tabs')
 
 driver = webdriver.Chrome(options=chrome_options)
+city = City()
 account = Account()
 
 last_request_time = time.time()  # Track the last request timestamp
@@ -77,12 +79,22 @@ def response_interceptor(request, response):
         request_body = request.body.decode('utf-8')
         
         if "getData" in request_body:
-            account.data = account.get_data(request, response)
+            city.get_data(request, response)
+            city.get_buildings_data(request, response)
             print("Data updated!")
+            print("Buildings data updated!")
             
         if "LogService" in request_body:
             account.server_time = account.get_server_time(request, response)
             print("Server time updated!")
+            
+        if ("HiddenRewardService" in request_body) or ("getData" in request_body):
+            city.get_hidden_rewards_data(request, response)
+            print("Hidden rewards data updated!")
+            
+        if "pickupProduction" in request_body:
+            city.update_buildings_data(request, response)
+            print("Buildings data updated!")
 
 
 # Set the interceptors
@@ -135,7 +147,7 @@ import tkinter as tk
 
 def button1_action():
     top_n = 15
-    building_ids, building_names, building_pfs = checkPickupBestPFProduction(account.data, top_n, verbose=False)
+    building_ids, building_names, building_pfs = checkPickupBestPFProduction(city.buildings_data, top_n, verbose=False)
     
     # Print results
     msg = f"Top {top_n} Buildings with Highest PFs:"
@@ -147,11 +159,11 @@ def button1_action():
 
 def button2_action():
     top_n = 15
-    pickupBestPFProduction(account.data, driver, account, top_n=top_n, verbose=True)
+    pickupBestPFProduction(city.buildings_data, driver, account, top_n=top_n, verbose=True)
     display_message(f"Top {top_n} Buildings Collected!")
     
 def button3_action():
-    building_ids, building_names = checkPickupAllProduction(account.data, verbose=False)
+    building_ids, building_names = checkPickupAllProduction(city.buildings_data, verbose=False)
     
     # Print results
     msg = f"Buildings Ready to Pick Up:"
@@ -160,11 +172,11 @@ def button3_action():
     display_message(msg)
     
 def button4_action():
-    pickupAllProduction(account.data, driver, account, verbose=True)
+    pickupAllProduction(city.buildings_data, driver, account, verbose=True)
     display_message(f"All Finished Productions Collected!")
     
 def button5_action():
-    reward_names, reward_ids = checkCollectAllReward(account.data, account.server_time, verbose = False)
+    reward_names, reward_ids = checkCollectAllReward(city.hidden_rewards_data, account.server_time, verbose = False)
     
     # Print results
     msg = f"Hidden Rewards Ready to Collect:"
@@ -173,7 +185,7 @@ def button5_action():
     display_message(msg)
     
 def button6_action():
-    collectAllReward(account.data, account.server_time, driver, account, verbose=True)
+    collectAllReward(city.hidden_rewards_data, account.server_time, driver, account, verbose=True)
     display_message(f"All Hidden Rewards Collected!")
     
 def check_size(button):

@@ -14,7 +14,6 @@ class Account:
         self.last_request_id = last_request_id
         self.request_log     = deque(maxlen=log_limit)
         self.response_log    = deque(maxlen=log_limit)
-        self.data            = None
         self.server_time     = None
 
     def log_request(self, request):
@@ -64,35 +63,6 @@ class Account:
             return None
         else:
             return datetime.datetime.fromisoformat(last_request['timestamp']).replace(tzinfo=datetime.UTC)
-        
-    def get_data(self, request = None, response = None):
-        if request == None and response == None:
-            for entry in reversed(self.response_log):
-                request  = entry['request']
-                response = entry['response']
-                if "forgeofempires.com/game/json?h=" in request.url:
-                    if "getData" in request.body.decode('utf-8'):
-                        break
-                    
-        decoded_body = request.body.decode('utf-8')  # Convert bytes to string
-        json_data = json.loads(decoded_body)  # Convert string to Python object
-        
-        for data in json_data:
-            if data['requestMethod'] == 'getData':
-                try:
-                    # Check if the response is Brotli compressed
-                    if 'br' in response.headers.get('content-encoding', ''):
-                        decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
-                    else:
-                        decompressed_body = response.body  # No compression, use raw body
-                    
-                    # Decode the response (assuming it's UTF-8)
-                    decoded_response_body = decompressed_body.decode('utf-8')
-                    json_response_data = json.loads(decoded_response_body)
-                    
-                    return(json_response_data[1:])
-                except Exception as e:
-                    print("Could not decode response body:", e)
                     
     def get_server_time(self, request = None, response = None):
         if request == None and response == None:

@@ -1,5 +1,6 @@
 from find_key_paths import find_key_paths
 from sendRequest import pickupProduction
+import copy
 
 # From data, checks all building that have finished production and collects them
 def pickupAllProduction(data, driver, account, verbose=False):
@@ -22,7 +23,10 @@ def checkPickupAllProduction(data, verbose=True):
     building_ids = []
     building_names = []
     for path in paths:
-        buildingInfo = data[path[0]][path[1]][path[2]][path[3]][path[4]]
+        buildingInfo = copy.deepcopy(data)
+        for key in path[:-2]:
+            buildingInfo = buildingInfo[key]
+            
         name = buildingInfo['cityentity_id']
         building_id = buildingInfo['id']
             
@@ -59,7 +63,10 @@ def checkPickupBestPFProduction(data, top_n=15, verbose=True):
     building_pf_list = []  # List to store tuples of (building_id, name, PFs)
 
     for path in paths:
-        buildingInfo = data[path[0]][path[1]][path[2]][path[3]][path[4]]
+        buildingInfo = copy.deepcopy(data)
+        for key in path[:-2]:
+            buildingInfo = buildingInfo[key]
+            
         building_id = buildingInfo['id']
         name = buildingInfo['cityentity_id']  # Extract building name
         
@@ -103,7 +110,10 @@ def getBlueGalaxyId(data, verbose=False):
     paths = find_key_paths(data, '__class__', 'ProductionFinishedState')
     
     for path in paths:
-        buildingInfo = data[path[0]][path[1]][path[2]][path[3]][path[4]]
+        buildingInfo = copy.deepcopy(data)
+        for key in path[:-2]:
+            buildingInfo = buildingInfo[key]
+            
         building_id = buildingInfo['id']
         name = buildingInfo['cityentity_id']  # Extract building name
         
@@ -131,6 +141,7 @@ def pickupBlueGalaxyAndBestPFProduction(data, driver, account, top_n=15, verbose
 
         
 if __name__ == "__main__":
+    data = city.buildings_data
     print(checkPickupBestPFProduction(data))
     print(checkPickupAllProduction(data))
     
