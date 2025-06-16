@@ -50,12 +50,8 @@ driver = webdriver.Chrome(options=chrome_options)
 city = City()
 account = Account()
 
-last_request_time = time.time()  # Track the last request timestamp
-
 # Define the request interceptor function
 def request_interceptor(request):
-    global last_request_time
-    last_request_time = time.time()
     account.log_request(request)
     
     if "forgeofempires.com/game/json?h=" in request.url:
