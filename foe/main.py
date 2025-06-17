@@ -88,7 +88,7 @@ def response_interceptor(request, response):
             city.get_hidden_rewards_data(request, response)
             print("Hidden rewards data updated!")
             
-        if ("pickupProduction" in request_body) or ("UseItemOnBuildingPayload" in request_body):
+        if ("pickupProduction" in request_body) or ("UseItemOnBuildingPayload" in request_body) or ("UseGridItemPayload" in request_body):
             city.update_buildings_data(request, response)
             print("Buildings data updated!")
 
@@ -212,12 +212,12 @@ display_area.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 scrollbar.config(command=display_area.yview)
 
 # Create buttons (adjusted y-positions)
-btn1 = tk.Button(root, text="print best pf production", command=button1_action, height=2, width=20)
-btn2 = tk.Button(root, text="collect best production", command=button2_action, height=2, width=20)
-btn3 = tk.Button(root, text="print finished production", command=button3_action, height=2, width=20)
-btn4 = tk.Button(root, text="collect finished production", command=button4_action, height=2, width=20)
-btn5 = tk.Button(root, text="print hidden rewards", command=button5_action, height=2, width=20)
-btn6 = tk.Button(root, text="collect hidden rewards", command=button6_action, height=2, width=20)
+btn1 = tk.Button(root, text="Show top 15 pf", command=button1_action, height=2, width=20)
+btn2 = tk.Button(root, text="Collect top 15 pf", command=button2_action, height=2, width=20)
+btn3 = tk.Button(root, text="Show finished prod.", command=button3_action, height=2, width=20)
+btn4 = tk.Button(root, text="Collect finished prod.", command=button4_action, height=2, width=20)
+btn5 = tk.Button(root, text="Show hidden rewards", command=button5_action, height=2, width=20)
+btn6 = tk.Button(root, text="Collect hidden rewards", command=button6_action, height=2, width=20)
 
 # Place buttons (positioned below display area)
 btn1.place(x=10, y=170)    # 170 instead of 10
