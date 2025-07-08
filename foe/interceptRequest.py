@@ -1,72 +1,85 @@
 import json
 import copy
+from signature_generator2 import generateRequestPayloadSignature
 
-def intercept_request_id(request, account, verbose=False):
-    def correct_requestId(request, last_request_id):
-        from signature_generator2 import generateRequestPayloadSignature
-        
-        new_request = copy.deepcopy(request)
-        
-        # Correct requestId
-        new_request_data = json.loads(request.body.decode("utf-8"))
-        
-        for idx, entry in enumerate(new_request_data):
-            entry["requestId"] = last_request_id + idx + 1
-                
-        # Re-encode and update the body
-        new_request_body = json.dumps(new_request_data, separators=(',', ':')).encode("utf-8")
-        new_request.body = new_request_body
-        
-        # Correct the headers for the new requestId
-        original_headers = list(request.headers.items())
+def route_interceptor(account, verbose=False):
+    async def handler(route, request):
+        if "forgeofempires.com/game/json?h=" not in request.url:
+            await route.continue_()
+            return
 
-        for key, value in original_headers:
-            del new_request.headers[key]
-            if key == "signature":
-                new_request.headers[key] = generateRequestPayloadSignature(new_request_data, account.user_key, account.salt)
-            elif key == "content-length":
-                new_request.headers[key] = f"{len(new_request_body)}"
-            else:
-                new_request.headers[key] = value
-                
-        return(new_request)
-    
-    last_request_id = account.last_request_id
-    if verbose:
-        print(f"Request to {request.url}:")
-    
-    # Ensure the request body is not empty
-    if not request.body:
-        print("Request body is empty.")
-        return last_request_id # Exit function early
-    
-    try:
-        request_data = json.loads(request.body.decode("utf-8"))  # Decode and parse JSON
-    except json.JSONDecodeError:
-        print("Request body is not valid JSON.")
-    except Exception as e:
-        print(f"Error parsing request body: {e}")    
-        
-        
-    if isinstance(request_data, list) and request_data:  # Ensure it's a non-empty list
+        try:
+            request_body = request.post_data
+            if not request_body:
+                if verbose:
+                    print("Empty body.")
+                await route.continue_()
+                return
+
+            request_data = json.loads(request_body)
+        except Exception as e:
+            print(f"route_interceptor: Error parsing request body: {e}")
+            await route.continue_()
+            return
+
+        if not isinstance(request_data, list) or not request_data:
+            if verbose:
+                print("Invalid request structure.")
+            await route.continue_()
+            return
+
         request_ids = [entry.get("requestId") for entry in request_data if "requestId" in entry]
-    else:
-        print("No valid requestId found in request body.")
-        return last_request_id
-                
-    if request_ids[0] == 1:
-        last_request_id = 0
-        
-    if request_ids[0] <= last_request_id:
-        new_request = correct_requestId(request, last_request_id)
-        print(f"Correcting id from {new_request} to {last_request_id+1}")
-        
-        request.body = new_request.body
-        request.headers = new_request.headers
-                
-    if verbose:
-        request_data = json.loads(request.body.decode("utf-8"))  # Decode and parse JSON
-        request_ids = [entry.get("requestId") for entry in request_data if "requestId" in entry]
-        print(request_ids)
+        if not request_ids:
+            if verbose:
+                print("No requestId found.")
+            await route.continue_()
+            return
 
-    return request_ids[-1]
+        # Track and correct requestId
+        if request_ids[0] == 1:
+            account.last_request_id = 0
+
+        if request_ids[0] <= account.last_request_id:
+            # Fix IDs
+            new_request_data = copy.deepcopy(request_data)
+            for idx, entry in enumerate(new_request_data):
+                entry["requestId"] = account.last_request_id + idx + 1
+
+            corrected_body = json.dumps(new_request_data, separators=(',', ':'))
+            corrected_headers = dict(request.headers)
+
+            # Fix headers
+            if "signature" in corrected_headers:
+                corrected_headers["signature"] = generateRequestPayloadSignature(
+                    new_request_data, account.user_key, account.salt
+                )
+            if "content-length" in corrected_headers: 
+                corrected_headers["content-length"] = str(len(corrected_body))
+
+            if verbose:
+                print(f"Corrected request IDs: {[e['requestId'] for e in new_request_data]}")
+
+            account.last_request_id = new_request_data[-1]["requestId"]
+            
+            # print("="*100)
+            # print(request_body)
+            # print(corrected_body)
+            # print(request_body == corrected_body)
+            # print("="*100)
+            # print(request.headers)
+            # print(corrected_headers)
+            # print(request.headers == corrected_headers)
+            # print("="*100)
+            
+            # Modify and send the updated request:
+            await route.continue_(
+                post_data=corrected_body,
+                headers=corrected_headers
+            )
+        else:
+            # IDs are fine, just update account
+            account.last_request_id = request_ids[-1]
+            if verbose:
+                print(f"{request.url}: {request_ids}")
+            await route.continue_()
+    return handler

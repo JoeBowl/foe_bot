@@ -4,17 +4,21 @@ import json
 import copy
 
 # From data, checks all hidden rewards and collects them
-def collectAllReward(data, server_time, driver, account, verbose=False):
+async def collectAllReward(data, server_time, driver, account, verbose=False):
     _, reward_ids = checkCollectAllReward(data, server_time, verbose=False)
     
     if reward_ids == []:
         return None
         
     for hiddenRewardId in reward_ids:
-        response = collectReward(hiddenRewardId, driver, account)
+        response = await collectReward(hiddenRewardId, driver, account)
+        account.last_request_id += 1
         
         if verbose == True:
-            print(response)
+            if "Success" in str(response):
+                print(account.last_request_id, "Success")
+            else:
+                print(response)
                 
     return response
 

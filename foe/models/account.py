@@ -22,10 +22,9 @@ class Account:
             'request': request
         })
 
-    def log_response(self, request, response):
+    def log_response(self, response):
         self.response_log.append({
             'timestamp': datetime.datetime.now(datetime.UTC).isoformat(),
-            'request': request,
             'response': response
         })
 
@@ -64,38 +63,37 @@ class Account:
         else:
             return datetime.datetime.fromisoformat(last_request['timestamp']).replace(tzinfo=datetime.UTC)
                     
-    def get_server_time(self, request = None, response = None):
-        if request == None and response == None:
-            for entry in reversed(self.response_log):
-                request  = entry['request']
-                response = entry['response']
-                if "forgeofempires.com/game/json?h=" in request.url:
-                    if "LogService" in request.body.decode('utf-8'):
-                        break
-                    
-        decoded_body = request.body.decode('utf-8')  # Convert bytes to string
-        json_data = json.loads(decoded_body)  # Convert string to Python object
-        
-        for data in json_data:
-            if data['requestClass'] == 'LogService':
-                try:
-                    # Check if the response is Brotli compressed
-                    if 'br' in response.headers.get('content-encoding', ''):
-                        decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
-                    else:
-                        decompressed_body = response.body  # No compression, use raw body
-                    
-                    # Decode the response (assuming it's UTF-8)
-                    decoded_response_body = decompressed_body.decode('utf-8')
-                    json_response_data = json.loads(decoded_response_body)
-                    
-                    path = find_key_paths(json_response_data, 'requestClass', 'TimeService')[0][:-1]  # remove the last key to get to the parent object
-                    for key in path:
-                        json_response_data = json_response_data[key]
-                    
-                    return(json_response_data['responseData']['time'])
-                except Exception as e:
-                    print("Could not decode response body:", e)
+    async def get_server_time(self, response=None, verbose=False):
+        try:
+            request = response.request
+
+            # Decode request body (already string in Playwright)
+            request_body = request.post_data
+            json_data = json.loads(request_body)
+
+            # Ensure we're looking at LogService requests
+            if not any(entry.get("requestClass") == "LogService" for entry in json_data):
+                return
+
+            # Await and decompress response
+            raw_body = await response.body()
+            
+            # Decode and parse response
+            decoded_response_body = raw_body.decode('utf-8')
+            json_response_data = json.loads(decoded_response_body)
+
+            # Find path to the TimeService object
+            path = find_key_paths(json_response_data, 'requestClass', 'TimeService')[0][:-1]  # up to parent
+            for key in path:
+                json_response_data = json_response_data[key]
+            
+            self.server_time = json_response_data['responseData']['time']
+            print(f"Server time updated to {self.server_time}")
+            return
+            
+        except Exception as e:
+            print("get_server_time: Could not decode response body:", e)
+            return
                                 
     def get_user_key(self, verbose=False):    
         last_request = self.get_last_log(url="forgeofempires.com/game/json?h=", method="POST")
@@ -116,43 +114,53 @@ class Account:
                 print("Could not find the user key.")
             return None
 
-    def get_salt(self, request, response, verbose=False):
+    async def get_salt(self, response, verbose=False):
+        extracted_content = None
         try:
-            encoding = response.headers.get('content-encoding', '')
+            # Playwright's response.body() is async, so await it
+            raw_body = await response.body()
+
+            # Get the content-encoding header (lowercase keys in Playwright)
+            # encoding = response.headers.get('content-encoding', '')
+            # 
+            # Decompress if needed
+            # if 'br' in encoding:
+            #     decompressed_body = brotli.decompress(raw_body)
+            # elif 'zstd' in encoding:
+            #     dctx = zstd.ZstdDecompressor()
+            #     with dctx.stream_reader(io.BytesIO(raw_body)) as reader:
+            #         decompressed_body = reader.read()
+            # else:
+            #     decompressed_body = raw_body
+            # 
+            # Decode body as UTF-8 text
+            # decoded_response_body = decompressed_body.decode('utf-8')
             
-            # Check if the response compressed
-            if 'br' in encoding:
-                decompressed_body = brotli.decompress(response.body)
-            elif 'zstd' in encoding:
-                dctx = zstd.ZstdDecompressor()
-                with dctx.stream_reader(io.BytesIO(response.body)) as reader:
-                    decompressed_body = reader.read()  # Read the entire decompressed stream
-            else:
-                decompressed_body = response.body
-            
-            # Decode the response (assuming it's UTF-8)
-            decoded_response_body = decompressed_body.decode('utf-8')
-            # print(decoded_response_body)
+            decoded_response_body = raw_body.decode('utf-8')
             
             signature_marker = "this._signatureHash+"
             start_pos = decoded_response_body.find(signature_marker)
-            
+
             if start_pos == -1:
                 print(f"'{signature_marker}' not found in the body.")
-            
-            # Move the position after "this._signatureHash+"
-            start_pos += len(signature_marker)+1
+                return None
 
-            # Now, we look for the next quote after this position
+            # Adjust position after marker + 1 (for quote or next char)
+            start_pos += len(signature_marker) + 1
+
+            # Find next quote to extract string
             end_pos = decoded_response_body.find('"', start_pos)
 
             if end_pos == -1:
                 print("No closing quote found.")
-                
-            # Extract the string between the quotes
+                return None
+
             extracted_content = decoded_response_body[start_pos:end_pos]
+
             if verbose:
                 print(f"Salt: {extracted_content}")
+
         except Exception as e:
-            print("Could not decode response body:", e)
-        return(extracted_content)
+            print("get_salt: Could not decode response body:", e)
+
+        return extracted_content

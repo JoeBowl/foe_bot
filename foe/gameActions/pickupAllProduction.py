@@ -3,16 +3,19 @@ from sendRequest import pickupProduction
 import copy
 
 # From data, checks all building that have finished production and collects them
-def pickupAllProduction(data, driver, account, verbose=False):
+async def pickupAllProduction(data, driver, account, verbose=False):
     building_ids, _ = checkPickupAllProduction(data, verbose=False)
         
     if building_ids != []:
-        response = pickupProduction(building_ids, driver, account)
+        response = await pickupProduction(building_ids, driver, account)
     else:
         response = None
         
     if verbose == True:
-        print(response)
+        if "Success" in str(response):
+            print(account.last_request_id, "Success")
+        else:
+            print(response)
         
     return response
 
@@ -43,16 +46,19 @@ def checkPickupAllProduction(data, verbose=True):
 
 
 # From data, checks all building that have finished production and collects them
-def pickupBestPFProduction(data, driver, account, top_n=15, verbose=False):
+async def pickupBestPFProduction(data, driver, account, top_n=15, verbose=False):
     building_ids, _, _ = checkPickupBestPFProduction(data, top_n, verbose=False)
         
     if building_ids != []:
-        response = pickupProduction(building_ids, driver, account)
+        response = await pickupProduction(building_ids, driver, account)
     else:
         response = None
     
     if verbose == True:
-        print(response)
+        if "Success" in str(response):
+            print(account.last_request_id, "Success")
+        else:
+            print(response)
         
     return response
 

@@ -19,22 +19,42 @@ def generateRequestPayloadSignature(payload, signatureHash, salt):
 
 if __name__ == "__main__":
     # Define your components
-    signatureHash = 'uY9Y8ltFhBxQyakYYPmLJzkw'
-    salt = "8EgkvPU/5Fe3b07lOTzxLR0eyK3jn6r0F1s2xPEGc4s/c2cmPhAUYEuwUqU/ngLl1widOt+wheQrROOoh5IyUQ=="
+    signatureHash = 'I3gIBhktlY9uB1xHg-UqYKyI'
+    salt = "WJRuPsdvuFgz4P33MHc7Yi6lOSowHi8zpNbUfTDt55Kg/Pb1iYWHWcNc3TFWxSL2qVZ2haAy/xYDOkUryqKdOw=="
     
     payload = [
-        {
-            "__class__": "ServerRequest",
-            "requestData": [[51]],
-            "requestClass": "CityProductionService",
-            "requestMethod": "pickupProduction",
-            "requestId": 17
-        }
-    ]
+  {
+    "__class__": "ServerRequest",
+    "requestData": [
+      {
+        "__class__": "ViewportMetrics",
+        "stageWidth": 1280,
+        "stageHeight": 800,
+        "bufferWidth": 1280,
+        "bufferHeight": 800,
+        "displayWidth": 1281,
+        "displayHeight": 801,
+        "contentsScaleFactor": 1
+      }
+    ],
+    "requestClass": "LogService",
+    "requestMethod": "logViewportMetrics",
+    "requestId": 1
+  },
+  {
+    "__class__": "ServerRequest",
+    "requestData": [],
+    "requestClass": "StartupService",
+    "requestMethod": "getData",
+    "requestId": 2
+  }
+]
     
     signature = generateRequestPayloadSignature(payload, signatureHash, salt)
     
     print("Generated Signature:", signature)
     
-    print("Actual Signature:   ", "afe973361f")
+    print("Actual Signature:   ", "3817fd070b")
+
+
 

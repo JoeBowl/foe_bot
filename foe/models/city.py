@@ -14,71 +14,78 @@ class City:
         self.hidden_rewards_data = None
         self.buildings_data = None
         
-    def get_data(self, request = None, response = None):
-        # if request == None and response == None:
-        #     for entry in reversed(self.response_log):
-        #         request  = entry['request']
-        #         response = entry['response']
-        #         if "forgeofempires.com/game/json?h=" in request.url:
-        #             if "getData" in request.body.decode('utf-8'):
-        #                 break
-                    
-        decoded_body = request.body.decode('utf-8')  # Convert bytes to string
-        json_data = json.loads(decoded_body)  # Convert string to Python object
-        
-        for data in json_data:
-            if data['requestMethod'] == 'getData':
-                try:
-                    # Check if the response is Brotli compressed
-                    if 'br' in response.headers.get('content-encoding', ''):
-                        decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
-                    else:
-                        decompressed_body = response.body  # No compression, use raw body
-                    
-                    # Decode the response (assuming it's UTF-8)
-                    decoded_response_body = decompressed_body.decode('utf-8')
-                    json_response_data = json.loads(decoded_response_body)
-                    
-                    self.data = json_response_data[1:]
-                except Exception as e:
-                    print("Could not decode response body:", e)
-                    
-    def get_hidden_rewards_data(self, request = None, response = None):
-        # Check if the response is Brotli compressed
-        if 'br' in response.headers.get('content-encoding', ''):
-            decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
-        else:
-            decompressed_body = response.body  # No compression, use raw body
-        
-        # Decode the response (assuming it's UTF-8)
-        decoded_response_body = decompressed_body.decode('utf-8')
-        json_response_data = json.loads(decoded_response_body)
-        
-        self.hidden_rewards_data = json_response_data
-        
-        # print(json.dumps(json_response_data, indent=2))
-        # print()
-        # print(request_body, "\n")
-        # checkCollectAllReward(json_response_data, account.server_time)
-        
-    def get_buildings_data(self, request = None, response = None):
-        # Check if the response is Brotli compressed
-        if 'br' in response.headers.get('content-encoding', ''):
-            decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
-        else:
-            decompressed_body = response.body  # No compression, use raw body
-        
-        # Decode the response (assuming it's UTF-8)
-        decoded_response_body = decompressed_body.decode('utf-8')
-        json_response_data = json.loads(decoded_response_body)
-        
-        path = find_key_paths(json_response_data, target_key = 'entities')[0][:-1]
+    async def get_data(self, response=None, verbose=False):
+        try:
+            if response is None:
+                print("Response must be provided.")
+                return
 
-        buildings_data = copy.deepcopy(json_response_data)
-        for key in path:
-            buildings_data = buildings_data[key]
+            # Get and parse request body
+            decoded_body = response.request.post_data
+            json_data = json.loads(decoded_body)
+
+            for data in json_data:
+                if data.get('requestMethod') == 'getData':
+                    try:
+                        # Get and handle compressed response body
+                        raw_body = await response.body()
+                        
+                        # encoding = response.headers.get('content-encoding', '')
+                        # if 'br' in encoding:
+                        #     decompressed_body = brotli.decompress(raw_body)
+                        # else:
+                        #     decompressed_body = raw_body
+                        # decoded_response_body = decompressed_body.decode('utf-8')
+                        
+                        decoded_response_body = raw_body.decode('utf-8')
+                        json_response_data = json.loads(decoded_response_body)
+
+                        # Save data, skipping the first element
+                        self.data = json_response_data[1:]
+                        if verbose:
+                            print("Data successfully extracted.")
+                    except Exception as e:
+                        print("get_data: Could not decode response body:", e)
+                    break
+
+        except Exception as e:
+            print("get_data: Error in get_data:", e)
+                    
+    async def get_hidden_rewards_data(self, response = None):
+        try:
+            # Await the async method to get raw bytes
+            raw_body = await response.body()
             
-        self.buildings_data = buildings_data['entities']
+            # Decode and parse JSON
+            decoded_response_body = raw_body.decode('utf-8')
+            json_response_data = json.loads(decoded_response_body)
+        
+            self.hidden_rewards_data = json_response_data
+            
+        except Exception as e:
+            print("get_hidden_rewards_data: Failed to extract hidden rewards data:", e)
+        
+    async def get_buildings_data(self, response):
+        try:
+            # Await the async method to get raw bytes
+            raw_body = await response.body()
+            
+            # Decode and parse JSON
+            decoded_response_body = raw_body.decode('utf-8')
+            json_response_data = json.loads(decoded_response_body)
+
+            # Extract path to the 'entities' key
+            path = find_key_paths(json_response_data, target_key='entities')[0][:-1]
+
+            # Traverse the structure to extract building data
+            buildings_data = copy.deepcopy(json_response_data)
+            for key in path:
+                buildings_data = buildings_data[key]
+
+            self.buildings_data = buildings_data['entities']
+
+        except Exception as e:
+            print("get_buildings_data: Failed to extract building data:", e)
         
     def update_buildings_data(self, request = None, response = None):
         # Check if the response is Brotli compressed
