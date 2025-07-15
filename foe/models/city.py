@@ -87,33 +87,33 @@ class City:
         except Exception as e:
             print("get_buildings_data: Failed to extract building data:", e)
         
-    def update_buildings_data(self, request = None, response = None):
-        # Check if the response is Brotli compressed
-        if 'br' in response.headers.get('content-encoding', ''):
-            decompressed_body = brotli.decompress(response.body)  # Decompress Brotli
-        else:
-            decompressed_body = response.body  # No compression, use raw body
+    async def update_buildings_data(self, response):
+        try:
+            # Await the async method to get raw bytes
+            raw_body = await response.body()
         
-        # Decode the response (assuming it's UTF-8)
-        decoded_response_body = decompressed_body.decode('utf-8')
-        json_response_data = json.loads(decoded_response_body)
-        # print(json.dumps(json_response_data, indent=2))
+            # Decode and parse JSON
+            decoded_response_body = raw_body.decode('utf-8')
+            json_response_data = json.loads(decoded_response_body)
         
-        # Find the paths for the updated entities
-        paths = find_key_paths(json_response_data, target_key = 'cityentity_id')
+            # Find the paths for the updated entities
+            paths = find_key_paths(json_response_data, target_key = 'cityentity_id')
         
-        # Load old city data
-        old_buildings_data = self.buildings_data
+            # Load old city data
+            old_buildings_data = self.buildings_data
         
-        for path in paths:
-            # Get the updated data for each building
-            updated_building_data = copy.deepcopy(json_response_data)
-            for key in path[:-1]:
-                updated_building_data = updated_building_data[key]
-                
-            # Replace old information for newer one
-            for i, old_building_data in enumerate(old_buildings_data):
-                if updated_building_data["id"] == old_building_data["id"]:
-                    # print(json.dumps(old_building_data, indent=2))
-                    # print(json.dumps(updated_building_data, indent=2))
-                    old_building_data.update(updated_building_data)
+            for path in paths:
+                # Get the updated data for each building
+                updated_building_data = copy.deepcopy(json_response_data)
+                for key in path[:-1]:
+                    updated_building_data = updated_building_data[key]
+                    
+                # Replace old information for newer one
+                for i, old_building_data in enumerate(old_buildings_data):
+                    if updated_building_data["id"] == old_building_data["id"]:
+                        # print(json.dumps(old_building_data, indent=2))
+                        # print(json.dumps(updated_building_data, indent=2))
+                        old_building_data.update(updated_building_data)
+                        
+        except Exception as e:
+            print("update_buildings_data: Failed to update building data:", e)
